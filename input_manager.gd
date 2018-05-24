@@ -14,7 +14,7 @@ var axes_values = {}
 var axes = []
 
 class InputAxis:
-	enum {TYPE_ACTION, TYPE_MOUSE_MOTION, TYPE_JOY_AXIS}
+	enum {TYPE_ACTION, TYPE_MOUSE_MOTION}
 	
 	var name = ""
 	var positive_action = ""
@@ -40,22 +40,11 @@ class InputAxis:
 func evaluate_single_axis(p_input_axis):
 	var out_axis = 0.0
 	
-	if p_input_axis.type == InputAxis.TYPE_JOY_AXIS:
-		out_axis = Input.get_joy_axis(0, p_input_axis.axis)
-		
-		# Flip the axis
-		if p_input_axis.inverted == true:
-			out_axis = -out_axis
-			
-		if(out_axis < p_input_axis.dead_zone and out_axis > -p_input_axis.dead_zone):
-			out_axis = 0.0
-	elif p_input_axis.type == InputAxis.TYPE_ACTION:
+	if p_input_axis.type == InputAxis.TYPE_ACTION:
 		if InputMap.has_action(p_input_axis.positive_action):
-			if(Input.is_action_pressed(p_input_axis.positive_action)):
-				out_axis += 1.0
+			out_axis += Input.get_action_strength(p_input_axis.positive_action)
 		if InputMap.has_action(p_input_axis.negative_action):
-			if(Input.is_action_pressed(p_input_axis.negative_action)):
-				out_axis -= 1.0
+			out_axis -= Input.get_action_strength(p_input_axis.negative_action)
 			
 	clamp(out_axis, -1.0, 1.0)
 	
@@ -75,7 +64,7 @@ func _input(p_event):
 					if current_axis.axis == 0:
 						axes_values[current_axis.name] = clamp(value + p_event.relative.x * 0.01, -1.0, 1.0)
 					if current_axis.axis == 1:
-						axes_values[current_axis.name] = clamp(value + p_event.relative.y * 0.01, -1.0, 1.0)
+						axes_values[current_axis.name] = clamp(value - p_event.relative.y * 0.01, -1.0, 1.0)
 	
 func _process(delta):
 	if !Engine.is_editor_hint():
@@ -92,21 +81,18 @@ func enter_tree():
 func exit_tree():
 	if !Engine.is_editor_hint():
 		Input.disconnect("joy_connection_changed", self, "joy_connection_changed")
+		
+func add_new_axes(p_name, p_positive_action = "", p_negative_action = "", p_gravity = 0.0, p_dead_zone = 0.0, p_sensitivity = 1.0, p_inverted = false, p_type = InputAxis.TYPE_ACTION, p_axis = 0):
+	axes.append(InputAxis.new(p_name, p_positive_action, p_negative_action, p_gravity, p_dead_zone, p_sensitivity, p_inverted, p_type, p_axis))
+	axes_values[p_name] = 0.0
 	
 func setup_default_axes():
-	axes = [
-	InputAxis.new("move_vertical_digital", "move_forwards", "move_backwards", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION, 0),
-	InputAxis.new("move_horizontal_digital", "move_right", "move_left", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION, 0),
-	InputAxis.new("move_vertical_analog", "", "", 0.0, 0.0, 1.0, true, InputAxis.TYPE_JOY_AXIS, 1),
-	InputAxis.new("move_horizontal_analog", "", "", 0.0, 0.0, 1.0, false, InputAxis.TYPE_JOY_AXIS, 0),
-	InputAxis.new("mouse_x", "", "", 0.0, 0.0, 1.0, false, InputAxis.TYPE_MOUSE_MOTION, 0),
-	InputAxis.new("mouse_y", "", "", 0.0, 0.0, 1.0, false, InputAxis.TYPE_MOUSE_MOTION, 1),
-	InputAxis.new("look_vertical_analog", "", "", 0.0, 0.1, 1.0, false, InputAxis.TYPE_JOY_AXIS, 2),
-	InputAxis.new("look_horizontal_analog", "", "", 0.0, 0.1, 1.0, false, InputAxis.TYPE_JOY_AXIS, 3)
-	]
-	
-	for input_axis in axes:
-		axes_values[input_axis.name] = 0.0
+	add_new_axes("move_vertical", "move_forwards", "move_backwards", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION, 0)
+	add_new_axes("move_horizontal", "move_right", "move_left", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION, 0)
+	add_new_axes("mouse_x", "", "", 0.0, 0.0, 1.0, false, InputAxis.TYPE_MOUSE_MOTION, 0)
+	add_new_axes("mouse_y", "", "", 0.0, 0.0, 1.0, false, InputAxis.TYPE_MOUSE_MOTION, 1)
+	add_new_axes("look_vertical", "look_up", "look_down", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION)
+	add_new_axes("look_horizontal", "look_right", "look_left", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION)
 	
 func _ready():
 	if !Engine.is_editor_hint():
