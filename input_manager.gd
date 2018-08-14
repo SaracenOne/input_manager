@@ -85,21 +85,15 @@ func exit_tree():
 func add_new_axes(p_name, p_positive_action = "", p_negative_action = "", p_gravity = 0.0, p_dead_zone = 0.0, p_sensitivity = 1.0, p_inverted = false, p_type = InputAxis.TYPE_ACTION, p_axis = 0):
 	axes.append(InputAxis.new(p_name, p_positive_action, p_negative_action, p_gravity, p_dead_zone, p_sensitivity, p_inverted, p_type, p_axis))
 	axes_values[p_name] = 0.0
-	
-func setup_default_axes():
-	add_new_axes("move_vertical", "move_forwards", "move_backwards", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION, 0)
-	add_new_axes("move_horizontal", "move_right", "move_left", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION, 0)
-	add_new_axes("mouse_x", "", "", 0.0, 0.0, 1.0, false, InputAxis.TYPE_MOUSE_MOTION, 0)
-	add_new_axes("mouse_y", "", "", 0.0, 0.0, 1.0, false, InputAxis.TYPE_MOUSE_MOTION, 1)
-	add_new_axes("look_vertical", "look_up", "look_down", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION)
-	add_new_axes("look_horizontal", "look_right", "look_left", 0.0, 0.0, 1.0, false, InputAxis.TYPE_ACTION)
+
+func set_active(p_active):
+	if !Engine.is_editor_hint():
+		set_process(p_active)
+		set_process_input(p_active)
 	
 func _ready():
 	if !Engine.is_editor_hint():
-		set_process(true)
-		set_process_input(true)
-	
-		setup_default_axes()
+		set_active(true)
 	
 		print("connected joypads:")
 		if(Input.get_connected_joypads().size() == 0):
