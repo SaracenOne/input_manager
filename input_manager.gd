@@ -1,14 +1,24 @@
 extends Node
 tool
 
-const DS4_Name = "Sony DualShock 4"
+#const DS4_Name = "Sony DualShock 4"
 const DS4_GUID = "4c05cc09000000000000504944564944"
 
-var connected_joypads = []
+enum {TYPE_XINPUT, TYPE_DS4, TYPE_UNKNOWN}
+var connected_joypads = {}
 
+static func get_joy_type_from_guid(p_guid):
+	if p_guid == DS4_GUID:
+		return TYPE_DS4
+	else:
+		return TYPE_XINPUT
+	
 class JoyPadInfo:
 	enum {TYPE_XINPUT, TYPE_DUALSHOCK, TYPE_UNKNOWN}
 	var type = TYPE_UNKNOWN
+	
+	func _init(p_type):
+		type = p_type
 
 var axes_values = {}
 var axes = []
@@ -46,7 +56,7 @@ func evaluate_single_axis(p_input_axis):
 		if InputMap.has_action(p_input_axis.negative_action):
 			out_axis -= Input.get_action_strength(p_input_axis.negative_action)
 			
-	clamp(out_axis, -1.0, 1.0)
+	out_axis = clamp(out_axis, -1.0, 1.0)
 	
 	return out_axis
 
@@ -66,21 +76,36 @@ func _input(p_event):
 					if current_axis.axis == 1:
 						axes_values[current_axis.name] = clamp(value - p_event.relative.y * 0.01, -1.0, 1.0)
 	
-func _process(delta):
-	if !Engine.is_editor_hint():
-		update_all_axis()
+func _process(p_delta):
+	if p_delta > 0.0:
+		if !Engine.is_editor_hint():
+			update_all_axis()
 	
-func joy_connection_changed(p_index, p_connected):
+func _joy_connection_changed(p_index, p_connected):
 	if !Engine.is_editor_hint():
-		print("Connection changed: " + str(p_index))
+		var connection_status = ""
+		if p_connected:
+			connected_joypads.push_back(p_index)
+			
+			connected_joypads[p_index] = JoyPadInfo.new(get_joy_type_from_guid(Input.get_joy_guid(p_index)))
+			connection_status = "connected"
+		else:
+			if connected_joypads.erase(p_index) == false:
+				printerr("Could not erase joypad index: " + str(p_index))
+			connection_status = "disconnected"
+			
+		print("Connection changed: " + str(p_index) + " - " + connection_status)
 	
 func enter_tree():
 	if !Engine.is_editor_hint():
-		Input.connect("joy_connection_changed", self, "joy_connection_changed")
+		var connect_result = Input.connect("joy_connection_changed", self, "_joy_connection_changed")
+		if connect_result != OK:
+			printerr("joy_connection_changed: could not connect!")
 	
 func exit_tree():
 	if !Engine.is_editor_hint():
-		Input.disconnect("joy_connection_changed", self, "joy_connection_changed")
+		if Input.is_connected("joy_connection_changed", self, "_joy_connection_changed"):
+			Input.disconnect("joy_connection_changed", self, "_joy_connection_changed")
 		
 func add_new_axes(p_name, p_positive_action = "", p_negative_action = "", p_gravity = 0.0, p_dead_zone = 0.0, p_sensitivity = 1.0, p_inverted = false, p_type = InputAxis.TYPE_ACTION, p_axis = 0):
 	axes.append(InputAxis.new(p_name, p_positive_action, p_negative_action, p_gravity, p_dead_zone, p_sensitivity, p_inverted, p_type, p_axis))
@@ -102,6 +127,9 @@ func _ready():
 			for joypad in Input.get_connected_joypads():
 				print(str(Input.get_joy_name(joypad)))
 				print(str(Input.get_joy_guid(joypad)))
+	else:
+		set_process(false)
+		set_physics_process(false)
 	
 	if(!ProjectSettings.has_setting("gameplay/invert_look_x")):
 		ProjectSettings.set_setting("gameplay/invert_look_x", false)
