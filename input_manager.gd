@@ -1,11 +1,12 @@
 extends Node
 tool
 
-#const DS4_Name = "Sony DualShock 4"
+const DS4_Name = "Sony DualShock 4"
 const DS4_GUID = "4c05cc09000000000000504944564944"
 
 enum {TYPE_XINPUT, TYPE_DS4, TYPE_UNKNOWN}
 var connected_joypads = {}
+var window_has_focus : bool = true
 
 static func get_joy_type_from_guid(p_guid):
 	if p_guid == DS4_GUID:
@@ -61,9 +62,10 @@ func evaluate_single_axis(p_input_axis):
 	return out_axis
 
 func update_all_axis():
-	for current_axis in axes:
-		var value = evaluate_single_axis(current_axis)
-		axes_values[current_axis.name] = value
+	if window_has_focus:
+		for current_axis in axes:
+			var value = evaluate_single_axis(current_axis)
+			axes_values[current_axis.name] = value
 
 func _input(p_event):
 	if !Engine.is_editor_hint():
@@ -115,6 +117,13 @@ func set_active(p_active):
 	if !Engine.is_editor_hint():
 		set_process(p_active)
 		set_process_input(p_active)
+		
+func _notification(p_notification):
+	match p_notification:
+		NOTIFICATION_WM_FOCUS_IN:
+			window_has_focus = true
+		NOTIFICATION_WM_FOCUS_OUT:
+			window_has_focus = false
 	
 func _ready():
 	if !Engine.is_editor_hint():
