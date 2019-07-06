@@ -8,6 +8,9 @@ enum {TYPE_XINPUT, TYPE_DS4, TYPE_UNKNOWN}
 var connected_joypads : Array = []
 var window_has_focus : bool = true
 
+var input_meta_callback : Array = []
+var input_meta_actions : Dictionary = {}
+
 static func get_joy_type_from_guid(p_guid : String):
 	if p_guid == DS4_GUID:
 		return TYPE_DS4
@@ -79,7 +82,9 @@ func update_all_axis() -> void:
 
 func _input(p_event) -> void:
 	if !Engine.is_editor_hint():
-		if(p_event is InputEventMouseMotion):
+		if p_event is InputEventJoypadMotion:
+			p_event.set_device(-1)
+		if p_event is InputEventMouseMotion:
 			for current_axis in axes:
 				if current_axis.type == InputAxis.TYPE_MOUSE_MOTION and (current_axis.axis == 0 or current_axis.axis == 1):
 					var value : float = axes_values[current_axis.name]
@@ -98,10 +103,12 @@ func _joy_connection_changed(p_index : int, p_connected : bool) -> void:
 		var connection_status : String = ""
 		if p_connected:
 			connected_joypads.push_back(p_index)
+			call_deferred("add_actions_for_input_device", p_index)
 			
 			connected_joypads[p_index] = JoyPadInfo.new(get_joy_type_from_guid(Input.get_joy_guid(p_index)))
 			connection_status = "connected"
 		else:
+			call_deferred("remove_actions_for_input_device", p_index)
 			if connected_joypads.erase(p_index) == false:
 				printerr("Could not erase joypad index: " + str(p_index))
 			connection_status = "disconnected"
@@ -144,9 +151,69 @@ func _notification(p_notification : int) -> void:
 			window_has_focus = true
 		NOTIFICATION_WM_FOCUS_OUT:
 			window_has_focus = false
+			
+func add_actions_for_input_device(p_device_id : int) -> void:
+	for callback in input_meta_callback:
+		var result = callback.call_func(p_device_id)
+		if typeof(result) == TYPE_BOOL:
+			if result == false:
+				return
+	
+	for action in input_meta_actions.keys():
+		for input_meta_event in input_meta_actions[action]:
+			var current_event : InputEvent = null
+			
+			if input_meta_event is InputEventJoypadButton or input_meta_event is InputEventJoypadMotion:
+				current_event = input_meta_event.duplicate()
+				
+			if current_event:
+				current_event.device = p_device_id
+				InputMap.action_add_event(action, current_event)
+			
+func remove_actions_for_input_device(p_device_id : int) -> void:
+	for callback in input_meta_callback:
+		var result = callback.call_func(p_device_id)
+		if typeof(result) == TYPE_BOOL:
+			if result == false:
+				return
+	
+	for action in InputMap.get_actions():
+		if input_meta_actions.has(action):
+			var event_list : Array = InputMap.get_action_list(action)
+			for input_event in event_list:
+				var should_erase : bool = false
+				if input_event is InputEventJoypadButton:
+					for input_meta_event in input_meta_actions[action]:
+						if input_event.button_index == input_meta_event.button_index:
+							should_erase = true
+				elif input_event is InputEventJoypadMotion:
+					for input_meta_event in input_meta_actions[action]:
+						if input_event.axis == input_meta_event.axis:
+							should_erase = true
+							
+				if should_erase:
+					InputMap.action_erase_event(action, input_event)
+					
+func assign_input_map_validation_callback(p_node, p_function_name):
+	var func_ref : FuncRef = funcref(p_node, p_function_name)
+	if func_ref.is_valid():
+		input_meta_callback.push_back(func_ref)
+	
+func setup_meta_action_input_map() -> void:
+	for action in InputMap.get_actions():
+		var event_list : Array = InputMap.get_action_list(action)
+		input_meta_actions[action] = []
+		for input_event in event_list:
+			if input_event is InputEventJoypadButton or input_event is InputEventJoypadMotion:
+				# TODO: currently only supports actions inputs defined as ALL
+				if input_event.device == -1:
+					input_meta_actions[action].push_back(input_event)
+				InputMap.action_erase_event(action, input_event)
 	
 func _ready() -> void:
 	if !Engine.is_editor_hint():
+		setup_meta_action_input_map()
+		
 		set_active(true)
 	
 		print("connected joypads:")
@@ -156,6 +223,7 @@ func _ready() -> void:
 			for joypad in Input.get_connected_joypads():
 				print(str(Input.get_joy_name(joypad)))
 				print(str(Input.get_joy_guid(joypad)))
+				add_actions_for_input_device(joypad)
 	else:
 		set_process(false)
 		set_physics_process(false)
