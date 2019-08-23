@@ -110,10 +110,10 @@ func _joy_connection_changed(p_index : int, p_connected : bool) -> void:
 		else:
 			call_deferred("remove_actions_for_input_device", p_index)
 			if connected_joypads.erase(p_index) == false:
-				printerr("Could not erase joypad index: " + str(p_index))
+				printerr("Could not erase joypad index: {index}".format({"index":str(p_index)}))
 			connection_status = "disconnected"
 			
-		print("Connection changed: " + str(p_index) + " - " + connection_status)
+		print("Connection changed: {index} - {connection_status}".format(
 	
 func enter_tree() -> void:
 	if !Engine.is_editor_hint():
