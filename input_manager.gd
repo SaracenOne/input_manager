@@ -114,6 +114,7 @@ func _joy_connection_changed(p_index : int, p_connected : bool) -> void:
 			connection_status = "disconnected"
 			
 		print("Connection changed: {index} - {connection_status}".format(
+			{"index":str(p_index), "connection_status":connection_status}))
 	
 func enter_tree() -> void:
 	if !Engine.is_editor_hint():
