@@ -61,26 +61,27 @@ class InputAxis:
 		type = p_type
 		axis = p_axis
 
-func evaluate_single_axis(p_input_axis : InputAxis) -> float:
-	var out_axis : float = 0.0
-	
-	if p_input_axis.type == InputAxis.TYPE_ACTION:
-		if InputMap.has_action(p_input_axis.positive_action):
-			out_axis += Input.get_action_strength(p_input_axis.positive_action)
-		if InputMap.has_action(p_input_axis.negative_action):
-			out_axis -= Input.get_action_strength(p_input_axis.negative_action)
-			
-	out_axis = clamp(out_axis, -1.0, 1.0)
-	
-	return out_axis
 
-func update_all_axis() -> void:
+func update_all_axes() -> void:
 	if window_has_focus:
 		for current_axis in axes:
-			var value : float = evaluate_single_axis(current_axis)
-			axes_values[current_axis.name] = value
+			if current_axis.type == InputAxis.TYPE_ACTION:
+				var out_axis : float = 0.0
+				
+				if InputMap.has_action(current_axis.positive_action):
+					out_axis += Input.get_action_strength(current_axis.positive_action)
+				if InputMap.has_action(current_axis.negative_action):
+					out_axis -= Input.get_action_strength(current_axis.negative_action)
+					
+				out_axis = clamp(out_axis, -1.0, 1.0)
+				axes_values[current_axis.name] = out_axis
+			
+func clear_all_axes() -> void:
+	for current_axis in axes:
+		if current_axis.type == InputAxis.TYPE_MOUSE_MOTION:
+			axes_values[current_axis.name] = 0.0
 
-func _input(p_event) -> void:
+func _input(p_event : InputEvent) -> void:
 	if !Engine.is_editor_hint():
 		if p_event is InputEventJoypadMotion:
 			p_event.set_device(-1)
@@ -92,12 +93,15 @@ func _input(p_event) -> void:
 						axes_values[current_axis.name] = clamp(value + p_event.relative.x * 0.01, -1.0, 1.0)
 					if current_axis.axis == 1:
 						axes_values[current_axis.name] = clamp(value - p_event.relative.y * 0.01, -1.0, 1.0)
+					
 	
 func _process(p_delta : float) -> void:
 	if p_delta > 0.0:
 		if !Engine.is_editor_hint():
-			update_all_axis()
-	
+			update_all_axes()
+			
+			call_deferred("clear_all_axes")
+
 func _joy_connection_changed(p_index : int, p_connected : bool) -> void:
 	if !Engine.is_editor_hint():
 		var connection_status : String = ""
