@@ -11,6 +11,10 @@ var window_has_focus : bool = true
 var input_meta_callback : Array = []
 var input_meta_actions : Dictionary = {}
 
+var invert_look_x : bool = false
+var invert_look_y : bool = false
+var mouse_sensitivity : float = 50.0
+
 static func get_joy_type_from_guid(p_guid : String):
 	if p_guid == DS4_GUID:
 		return TYPE_DS4
@@ -90,9 +94,9 @@ func _input(p_event : InputEvent) -> void:
 				if current_axis.type == InputAxis.TYPE_MOUSE_MOTION and (current_axis.axis == 0 or current_axis.axis == 1):
 					var value : float = axes_values[current_axis.name]
 					if current_axis.axis == 0:
-						axes_values[current_axis.name] = clamp(value + p_event.relative.x * 0.01, -1.0, 1.0)
+						axes_values[current_axis.name] = clamp(value + p_event.relative.x * 0.001, -1.0, 1.0)
 					if current_axis.axis == 1:
-						axes_values[current_axis.name] = clamp(value - p_event.relative.y * 0.01, -1.0, 1.0)
+						axes_values[current_axis.name] = clamp(value - p_event.relative.y * 0.001, -1.0, 1.0)
 					
 	
 func _process(p_delta : float) -> void:
@@ -234,7 +238,16 @@ func _ready() -> void:
 		set_physics_process(false)
 	
 	if(!ProjectSettings.has_setting("gameplay/invert_look_x")):
-		ProjectSettings.set_setting("gameplay/invert_look_x", false)
+		ProjectSettings.set_setting("gameplay/invert_look_x", invert_look_x)
+	else:
+		ProjectSettings.get_setting("gameplay/invert_look_x")
 		
 	if(!ProjectSettings.has_setting("gameplay/invert_look_y")):
-		ProjectSettings.set_setting("gameplay/invert_look_y", false)
+		ProjectSettings.set_setting("gameplay/invert_look_y", invert_look_y)
+	else:
+		ProjectSettings.get_setting("gameplay/invert_look_y")
+		
+	if(!ProjectSettings.has_setting("gameplay/mouse_sensitivity")):
+		ProjectSettings.set_setting("gameplay/mouse_sensitivity", mouse_sensitivity)
+	else:
+		ProjectSettings.get_setting("gameplay/mouse_sensitivity")
