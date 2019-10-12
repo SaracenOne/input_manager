@@ -5,7 +5,7 @@ const DS4_Name : String = "Sony DualShock 4"
 const DS4_GUID : String = "4c05cc09000000000000504944564944"
 
 enum {TYPE_XINPUT, TYPE_DS4, TYPE_UNKNOWN}
-var connected_joypads : Array = []
+var connected_joypads : Dictionary = {}
 var window_has_focus : bool = true
 
 var input_meta_callback : Array = []
@@ -110,27 +110,29 @@ func _joy_connection_changed(p_index : int, p_connected : bool) -> void:
 	if !Engine.is_editor_hint():
 		var connection_status : String = ""
 		if p_connected:
-			connected_joypads.push_back(p_index)
 			call_deferred("add_actions_for_input_device", p_index)
 			
 			connected_joypads[p_index] = JoyPadInfo.new(get_joy_type_from_guid(Input.get_joy_guid(p_index)))
 			connection_status = "connected"
 		else:
 			call_deferred("remove_actions_for_input_device", p_index)
-			if connected_joypads.erase(p_index) == false:
+			if connected_joypads.has(p_index) == true:
+				connected_joypads.erase(p_index)
+				connection_status = "disconnected"
+			else:
 				printerr("Could not erase joypad index: {index}".format({"index":str(p_index)}))
-			connection_status = "disconnected"
+				connection_status = "invalid disconnect"
 			
 		print("Connection changed: {index} - {connection_status}".format(
 			{"index":str(p_index), "connection_status":connection_status}))
 	
-func enter_tree() -> void:
+func _enter_tree() -> void:
 	if !Engine.is_editor_hint():
 		var connect_result : int = Input.connect("joy_connection_changed", self, "_joy_connection_changed")
 		if connect_result != OK:
 			printerr("joy_connection_changed: could not connect!")
 	
-func exit_tree() -> void:
+func _exit_tree() -> void:
 	if !Engine.is_editor_hint():
 		if Input.is_connected("joy_connection_changed", self, "_joy_connection_changed"):
 			Input.disconnect("joy_connection_changed", self, "_joy_connection_changed")
@@ -192,13 +194,15 @@ func remove_actions_for_input_device(p_device_id : int) -> void:
 			for input_event in event_list:
 				var should_erase : bool = false
 				if input_event is InputEventJoypadButton:
-					for input_meta_event in input_meta_actions[action]:
-						if input_event.button_index == input_meta_event.button_index:
-							should_erase = true
+					if input_event.device == p_device_id:
+						for input_meta_event in input_meta_actions[action]:
+							if input_event.button_index == input_meta_event.button_index:
+								should_erase = true
 				elif input_event is InputEventJoypadMotion:
-					for input_meta_event in input_meta_actions[action]:
-						if input_event.axis == input_meta_event.axis:
-							should_erase = true
+					if input_event.device == p_device_id:
+						for input_meta_event in input_meta_actions[action]:
+							if input_event.axis == input_meta_event.axis:
+								should_erase = true
 							
 				if should_erase:
 					InputMap.action_erase_event(action, input_event)
@@ -225,14 +229,15 @@ func _ready() -> void:
 		
 		set_active(true)
 	
-		print("connected joypads:")
 		if(Input.get_connected_joypads().size() == 0):
-			print("No joypads connected.")
+			pass # No joypads connected
 		else:
 			for joypad in Input.get_connected_joypads():
-				print(str(Input.get_joy_name(joypad)))
-				print(str(Input.get_joy_guid(joypad)))
+				var name : String = Input.get_joy_name(joypad)
+				var guid : String = Input.get_joy_guid(joypad)
+				connected_joypads[joypad] = JoyPadInfo.new(get_joy_type_from_guid(guid))
 				add_actions_for_input_device(joypad)
+				
 	else:
 		set_process(false)
 		set_physics_process(false)
