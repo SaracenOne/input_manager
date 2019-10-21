@@ -117,7 +117,8 @@ func _joy_connection_changed(p_index : int, p_connected : bool) -> void:
 		else:
 			call_deferred("remove_actions_for_input_device", p_index)
 			if connected_joypads.has(p_index) == true:
-				connected_joypads.erase(p_index)
+				if connected_joypads.erase(p_index) == false:
+					printerr("Could not erased: {index}".format({"index":str(p_index)}))
 				connection_status = "disconnected"
 			else:
 				printerr("Could not erase joypad index: {index}".format({"index":str(p_index)}))
@@ -233,7 +234,6 @@ func _ready() -> void:
 			pass # No joypads connected
 		else:
 			for joypad in Input.get_connected_joypads():
-				var name : String = Input.get_joy_name(joypad)
 				var guid : String = Input.get_joy_guid(joypad)
 				connected_joypads[joypad] = JoyPadInfo.new(get_joy_type_from_guid(guid))
 				add_actions_for_input_device(joypad)
