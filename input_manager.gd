@@ -129,7 +129,7 @@ func _joy_connection_changed(p_index : int, p_connected : bool) -> void:
 	
 func _enter_tree() -> void:
 	if !Engine.is_editor_hint():
-		var connect_result : int = Input.connect("joy_connection_changed", self, "_joy_connection_changed")
+		var connect_result : int = Input.connect("joy_connection_changed", self, "_joy_connection_changed", [], CONNECT_DEFERRED)
 		if connect_result != OK:
 			printerr("joy_connection_changed: could not connect!")
 	
