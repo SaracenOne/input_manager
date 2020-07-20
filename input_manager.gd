@@ -116,8 +116,8 @@ func _joy_connection_changed(p_index : int, p_connected : bool) -> void:
 			connection_status = "connected"
 		else:
 			call_deferred("remove_actions_for_input_device", p_index)
-			if connected_joypads.has(p_index) == true:
-				if connected_joypads.erase(p_index) == false:
+			if connected_joypads.has(p_index):
+				if !connected_joypads.erase(p_index):
 					printerr("Could not erased: {index}".format({"index":str(p_index)}))
 				connection_status = "disconnected"
 			else:
@@ -168,7 +168,7 @@ func add_actions_for_input_device(p_device_id : int) -> void:
 	for callback in input_meta_callback:
 		var result = callback.call_func(p_device_id)
 		if typeof(result) == TYPE_BOOL:
-			if result == false:
+			if !result:
 				return
 	
 	for action in input_meta_actions.keys():
@@ -186,7 +186,7 @@ func remove_actions_for_input_device(p_device_id : int) -> void:
 	for callback in input_meta_callback:
 		var result = callback.call_func(p_device_id)
 		if typeof(result) == TYPE_BOOL:
-			if result == false:
+			if !result:
 				return
 	
 	for action in InputMap.get_actions():
