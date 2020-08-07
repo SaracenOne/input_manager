@@ -290,14 +290,14 @@ func _ready() -> void:
 	if ! ProjectSettings.has_setting("gameplay/invert_look_x"):
 		ProjectSettings.set_setting("gameplay/invert_look_x", invert_look_x)
 	else:
-		ProjectSettings.get_setting("gameplay/invert_look_x")
+		invert_look_x = ProjectSettings.get_setting("gameplay/invert_look_x")
 
 	if ! ProjectSettings.has_setting("gameplay/invert_look_y"):
 		ProjectSettings.set_setting("gameplay/invert_look_y", invert_look_y)
 	else:
-		ProjectSettings.get_setting("gameplay/invert_look_y")
+		invert_look_y = ProjectSettings.get_setting("gameplay/invert_look_y")
 
 	if ! ProjectSettings.has_setting("gameplay/mouse_sensitivity"):
 		ProjectSettings.set_setting("gameplay/mouse_sensitivity", mouse_sensitivity)
 	else:
-		ProjectSettings.get_setting("gameplay/mouse_sensitivity")
+		mouse_sensitivity = ProjectSettings.get_setting("gameplay/mouse_sensitivity")
