@@ -1,6 +1,12 @@
 extends Node
 tool
 
+const USER_PREFERENCES_SECTION_NAME = "input"
+
+var set_settings_value: FuncRef = FuncRef.new()
+var get_settings_value: FuncRef = FuncRef.new()
+var save_settings: FuncRef = FuncRef.new()
+
 const DS4_Name: String = "Sony DualShock 4"
 const DS4_GUID: String = "4c05cc09000000000000504944564944"
 
@@ -268,6 +274,40 @@ func setup_meta_action_input_map() -> void:
 					input_meta_actions[action].push_back(input_event)
 				InputMap.action_erase_event(action, input_event)
 
+func set_settings_value(p_key: String, p_value) -> void:
+	if set_settings_value.is_valid():
+		set_settings_value.call_func(USER_PREFERENCES_SECTION_NAME, p_key, p_value)
+
+func set_settings_values():
+	set_settings_value("invert_look_x", invert_look_x)
+	set_settings_value("invert_look_y", invert_look_y)
+	set_settings_value("mouse_sensitivity", mouse_sensitivity)
+
+func get_settings_value(p_key: String, p_type: int, p_default):
+	if get_settings_value.is_valid():
+		return get_settings_value.call_func(USER_PREFERENCES_SECTION_NAME, p_key, p_type, p_default)
+	else:
+		return p_default
+
+func get_settings_values() -> void:
+	invert_look_x = get_settings_value("invert_look_x", TYPE_BOOL, invert_look_x)
+	invert_look_y = get_settings_value("invert_look_y", TYPE_BOOL, invert_look_y)
+	mouse_sensitivity = get_settings_value("mouse_sensitivity", TYPE_REAL, mouse_sensitivity)
+
+func is_quitting() -> void:
+	set_settings_values()
+
+func assign_set_settings_value_funcref(p_instance: Object, p_function: String) -> void:
+	set_settings_value.set_instance(p_instance)
+	set_settings_value.set_function(p_function)
+	
+func assign_get_settings_value_funcref(p_instance: Object, p_function: String) -> void:
+	get_settings_value.set_instance(p_instance)
+	get_settings_value.set_function(p_function)
+	
+func assign_save_settings_funcref(p_instance: Object, p_function: String) -> void:
+	save_settings.set_instance(p_instance)
+	save_settings.set_function(p_function)
 
 func _ready() -> void:
 	if ! Engine.is_editor_hint():
@@ -286,18 +326,3 @@ func _ready() -> void:
 	else:
 		set_process(false)
 		set_physics_process(false)
-
-	if ! ProjectSettings.has_setting("gameplay/invert_look_x"):
-		ProjectSettings.set_setting("gameplay/invert_look_x", invert_look_x)
-	else:
-		invert_look_x = ProjectSettings.get_setting("gameplay/invert_look_x")
-
-	if ! ProjectSettings.has_setting("gameplay/invert_look_y"):
-		ProjectSettings.set_setting("gameplay/invert_look_y", invert_look_y)
-	else:
-		invert_look_y = ProjectSettings.get_setting("gameplay/invert_look_y")
-
-	if ! ProjectSettings.has_setting("gameplay/mouse_sensitivity"):
-		ProjectSettings.set_setting("gameplay/mouse_sensitivity", mouse_sensitivity)
-	else:
-		mouse_sensitivity = ProjectSettings.get_setting("gameplay/mouse_sensitivity")
