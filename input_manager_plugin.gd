@@ -2,6 +2,16 @@ tool
 extends EditorPlugin
 
 
+func _init() -> void:
+	print("Initialising InputManager plugin")
+
+
+func _notification(p_notification: int):
+	match p_notification:
+		NOTIFICATION_PREDELETE:
+			print("Destroying InputManager plugin")
+
+
 func get_name() -> String:
 	return "InputManager"
 
