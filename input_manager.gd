@@ -12,7 +12,6 @@ const DS4_GUID: String = "4c05cc09000000000000504944564944"
 
 enum { TYPE_XINPUT, TYPE_DS4, TYPE_UNKNOWN }
 var connected_joypads: Dictionary = {}
-var window_has_focus: bool = true
 
 var input_meta_callback: Array = []
 var input_meta_actions: Dictionary = {}
@@ -76,18 +75,17 @@ class InputAxis:
 
 
 func update_all_axes() -> void:
-	if window_has_focus:
-		for current_axis in axes:
-			if current_axis.type == InputAxis.TYPE_ACTION:
-				var out_axis: float = 0.0
+	for current_axis in axes:
+		if current_axis.type == InputAxis.TYPE_ACTION:
+			var out_axis: float = 0.0
 
-				if InputMap.has_action(current_axis.positive_action):
-					out_axis += Input.get_action_strength(current_axis.positive_action)
-				if InputMap.has_action(current_axis.negative_action):
-					out_axis -= Input.get_action_strength(current_axis.negative_action)
+			if InputMap.has_action(current_axis.positive_action):
+				out_axis += Input.get_action_strength(current_axis.positive_action)
+			if InputMap.has_action(current_axis.negative_action):
+				out_axis -= Input.get_action_strength(current_axis.negative_action)
 
-				out_axis = clamp(out_axis, -1.0, 1.0)
-				axes_values[current_axis.name] = out_axis
+			out_axis = clamp(out_axis, -1.0, 1.0)
+			axes_values[current_axis.name] = out_axis
 
 
 func clear_all_axes() -> void:
@@ -198,14 +196,6 @@ func set_active(p_active: bool) -> void:
 	if ! Engine.is_editor_hint():
 		set_process(p_active)
 		set_process_input(p_active)
-
-
-func _notification(p_notification: int) -> void:
-	match p_notification:
-		NOTIFICATION_WM_FOCUS_IN:
-			window_has_focus = true
-		NOTIFICATION_WM_FOCUS_OUT:
-			window_has_focus = false
 
 
 func add_actions_for_input_device(p_device_id: int) -> void:
