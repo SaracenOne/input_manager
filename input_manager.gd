@@ -20,6 +20,10 @@ var invert_look_x: bool = false
 var invert_look_y: bool = false
 var mouse_sensitivity: float = 50.0
 
+# May want to make this configurable!
+const INPUT_UPDATE_RATE = 1.0 / 60
+var input_update_delta: float = 0.0
+
 static func get_joy_type_from_guid(p_guid: String):
 	if p_guid == DS4_GUID:
 		return TYPE_DS4
@@ -116,11 +120,15 @@ func _input(p_event: InputEvent) -> void:
 
 
 func _process(p_delta: float) -> void:
-	if p_delta > 0.0:
-		if ! Engine.is_editor_hint():
+	if ! Engine.is_editor_hint():
+		input_update_delta += p_delta
+		
+		if input_update_delta > INPUT_UPDATE_RATE:
 			update_all_axes()
-
 			call_deferred("clear_all_axes")
+			
+			while input_update_delta > INPUT_UPDATE_RATE:
+				input_update_delta -= INPUT_UPDATE_RATE
 
 
 func _joy_connection_changed(p_index: int, p_connected: bool) -> void:
